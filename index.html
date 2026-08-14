@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>SERTEC · Portal Técnico</title>
+
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0284c7">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SERTEC">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+
+  <style>
+    html, body { margin:0; padding:0; height:100%; background:#f8fafc; overflow:hidden; }
+    #appFrame { border:0; width:100%; height:100%; display:block; }
+
+    #splash {
+      position:fixed; inset:0; background:#f8fafc; display:flex; flex-direction:column;
+      align-items:center; justify-content:center; gap:12px; transition:opacity .25s ease;
+      font-family: system-ui, -apple-system, sans-serif;
+    }
+    #splash.oculto { opacity:0; pointer-events:none; }
+    #splash .logo {
+      width:64px; height:64px; border-radius:20px; background:linear-gradient(135deg,#0284c7,#0369a1);
+      display:flex; align-items:center; justify-content:center; color:#fff; font-weight:800; font-size:26px;
+      box-shadow:0 10px 24px -8px rgba(2,132,199,.5);
+    }
+    #splash .txt { color:#64748b; font-size:13px; font-weight:600; }
+    #splash .anillo {
+      width:22px; height:22px; border:3px solid rgba(2,132,199,.2); border-top-color:#0284c7;
+      border-radius:50%; animation:girar .8s linear infinite;
+    }
+    @keyframes girar { to { transform:rotate(360deg); } }
+
+    /* Aviso si la Web App de Apps Script no cargó (URL mal configurada, sin permisos, etc.) */
+    #avisoError {
+      position:fixed; inset:0; background:#f8fafc; display:none; align-items:center; justify-content:center;
+      padding:24px; text-align:center; font-family: system-ui, -apple-system, sans-serif;
+    }
+    #avisoError.visible { display:flex; }
+    #avisoError .caja { max-width:360px; }
+    #avisoError h1 { font-size:16px; color:#0f172a; margin:0 0 8px; }
+    #avisoError p { font-size:13px; color:#64748b; margin:0 0 16px; line-height:1.5; }
+    #avisoError button {
+      background:#0284c7; color:#fff; border:0; padding:10px 18px; border-radius:10px;
+      font-weight:700; font-size:13px; cursor:pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ==========================================================================================
+       CONFIGURACIÓN — cambiar SOLO esta línea si el ID de despliegue de la Web App cambia
+       (por ejemplo al publicar una nueva versión con "Implementar > Nueva implementación").
+       ========================================================================================== -->
+  <script>
+    var URL_WEBAPP_GAS = "https://script.google.com/a/macros/xcmg.cl/s/AKfycby6GVrhwojhmBcfBZEhFr8qIwxAMUF9WTGFjUexuzif243BOfAdo4OIffW7ebd0fOUS/exec?app=tecnicos";
+  </script>
+
+  <div id="splash">
+    <div class="logo">S</div>
+    <div class="anillo"></div>
+    <div class="txt">Cargando SERTEC…</div>
+  </div>
+
+  <div id="avisoError">
+    <div class="caja">
+      <h1>No se pudo cargar el Portal Técnico</h1>
+      <p>Revisa tu conexión a internet, o que la URL de la Web App en <code>index.html</code> (variable
+        <code>URL_WEBAPP_GAS</code>) sea la correcta y esté publicada con acceso habilitado.</p>
+      <button onclick="location.reload()">Reintentar</button>
+    </div>
+  </div>
+
+  <iframe id="appFrame" title="SERTEC Portal Técnico" allow="clipboard-write"></iframe>
+
+  <script>
+    (function () {
+      var frame = document.getElementById("appFrame");
+      var splash = document.getElementById("splash");
+      var aviso = document.getElementById("avisoError");
+      var cargo = false;
+
+      frame.addEventListener("load", function () {
+        cargo = true;
+        splash.classList.add("oculto");
+        setTimeout(function () { splash.style.display = "none"; }, 300);
+      });
+
+      // Si en 12s el iframe no ha disparado "load" (URL mal puesta, sin internet, deploy caído),
+      // se muestra un aviso claro en vez de dejar el splash girando para siempre.
+      setTimeout(function () {
+        if (!cargo) {
+          splash.style.display = "none";
+          aviso.classList.add("visible");
+        }
+      }, 12000);
+
+      frame.src = URL_WEBAPP_GAS;
+
+      // Registro del Service Worker del SHELL (este index.html + manifest). El contenido real de
+      // la app (dentro del iframe) lo cachea/gestiona el propio portaltecnicos.html, no este SW.
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", function () {
+          navigator.serviceWorker.register("sw.js").catch(function (e) {
+            console.warn("Service Worker no registrado (no crítico):", e);
+          });
+        });
+      }
+    })();
+  </script>
+
+</body>
+</html>
